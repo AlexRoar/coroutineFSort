@@ -2,15 +2,15 @@
 // Created by Александр Дремов on 17.03.2021.
 //
 
-#ifndef COROUTINES_COSORT_H
-#define COROUTINES_COSORT_H
-
 #include <ucontext.h>
 #include <stdio.h>
 #include <stdlib.h>
 #include <signal.h>
 #include <sys/mman.h>
 #include <sys/time.h>
+
+#ifndef COROUTINES_COSORT_H
+#define COROUTINES_COSORT_H
 
 #define true 1
 #define false 0
@@ -30,6 +30,7 @@ typedef struct {
 typedef struct {
     struct timeval elapsed;
     size_t switched;
+    void* initialSp;
     ContextDataUser userData;
 } ContextData;
 

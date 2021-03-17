@@ -2,10 +2,11 @@
 // Created by Александр Дремов on 17.03.2021.
 //
 
-#ifndef COROUTINES_STACKARRAYS_H
-#define COROUTINES_STACKARRAYS_H
 #include <stdlib.h>
 #include <stdio.h>
+
+#ifndef COROUTINES_STACKARRAYS_H
+#define COROUTINES_STACKARRAYS_H
 
 typedef struct {
     void * array;

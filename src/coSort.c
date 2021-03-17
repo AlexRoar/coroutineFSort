@@ -4,13 +4,14 @@
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
 #define _XOPEN_SOURCE /* Mac compatibility. */
+#define _BSD_SOURCE
 
 #include "coSort.h"
 #include "stack.h"
 #include "stackArrays.h"
 #include <string.h>
 
-#define STACK_SIZE (64 * 1024)
+#define STACK_SIZE (1024 * 1024)
 #define MICDIV 1000000
 static CoPlanner planner;
 
@@ -235,8 +236,6 @@ void CoPlanner_init(CoPlanner *this, unsigned noCon, struct timeval latency) {
 void CoPlanner_destroy(CoPlanner *this) {
     free(this->active);
     free(this->data);
-    for (int i = 0; i < this->count; i++)
-        free(this->contexts[i].uc_stack.ss_sp);
     free(this->contexts);
 }
 
@@ -245,6 +244,7 @@ void CoPlanner_add(CoPlanner *this, size_t stackSize, void *func) {
         handleError("capacity overflow");
     ucontext_t *newCont = this->contexts + this->count;
     char *stack = allocateStack(stackSize);
+    this->data[this->count].initialSp = stack;
     if (getcontext(newCont) == -1)
         handleError("getcontext");
 
@@ -379,6 +379,7 @@ struct timeval getNowFastTime() {
 static void *allocateStack(size_t size) {
     void *stack = malloc(size);
     mprotect(stack, size, PROT_READ | PROT_WRITE | PROT_EXEC);
+
     return stack;
 }
 
