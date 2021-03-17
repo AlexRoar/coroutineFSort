@@ -11,7 +11,7 @@
 #include "stackArrays.h"
 #include <string.h>
 
-#define STACK_SIZE (1024 * 1024)
+#define STACK_SIZE (SIGSTKSZ)
 #define MICDIV 1000000
 static CoPlanner planner;
 
@@ -77,6 +77,7 @@ int main(int argc, const char **argv) {
 
     if (res.array)
         free(res.array);
+    free(mergeStack.items);
     fclose(outFile);
     CoPlanner_destroy(&planner);
     return 0;
@@ -130,7 +131,7 @@ void fileInputNumbers(ContextData *nowData, stack *input, int id) {
     rewind(nowData->userData.file);
     CoPlanner_rollIfLatency(&planner);
 
-    char *fileRead = malloc(size + 1);
+    char *fileRead = malloc(size + 2);
 
     if (!fileRead) {
         printf("Error on malloc in coroutine %d", id);
@@ -289,6 +290,8 @@ void CoPlanner_fire(CoPlanner *this) {
 
 bool CoPlanner_roll(CoPlanner *this) {
     CoPlanner_addCoElapsed(this);
+    if (this->now >= this->count)
+        return false;
     ucontext_t *enterC = &this->contexts[this->now];
     this->now = CoPlanner_nextAvailable(this);
     if (this->now >= this->count)
@@ -306,11 +309,7 @@ void CoPlanner_swapToNowFrom(CoPlanner *this, ucontext_t *enterC) {
 
 bool CoPlanner_rollIfLatency(CoPlanner *this) {
     struct timeval elapsed = CoPlanner_elapsed(this);
-    if (elapsed.tv_sec > this->latencyByN.tv_sec)
-        return CoPlanner_roll(this);
-    else if (elapsed.tv_sec < this->latencyByN.tv_sec)
-        return false;
-    else if (elapsed.tv_usec >= this->latencyByN.tv_usec)
+    if (elapsed.tv_sec > this->latencyByN.tv_sec || (elapsed.tv_sec == this->latencyByN.tv_sec && elapsed.tv_usec >= this->latencyByN.tv_usec))
         return CoPlanner_roll(this);
     return false;
 }
