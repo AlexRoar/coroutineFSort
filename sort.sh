@@ -1,1 +1,19 @@
-build/coSort 880 data/1.txt data/2.txt data/3.txt data/4.txt data/5.txt data/6.txt data/7.txt data/8.txt
+if [ -z "$1" ]
+  then
+    echo "No latency supplied"
+    return 1;
+fi
+
+if [ -z "$2" ]
+  then
+    echo "No files num supplied"
+    return 1;
+fi
+
+ARGS="$1"
+for ((i = 1 ; i <= $2 ; i++))
+do
+  ARGS="$ARGS data/$i.txt"
+done
+echo $ARGS
+build/coSort $ARGS

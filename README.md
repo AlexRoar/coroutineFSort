@@ -21,5 +21,8 @@ coSort <latency> [file1, file2, ...]
 
 ## Testing
 ```bash
-sh test.sh
+sh test.sh <latency> <numfiles>
+```
+```bash
+sh test.sh 880 10
 ```

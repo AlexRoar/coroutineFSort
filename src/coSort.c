@@ -31,6 +31,10 @@ int main(int argc, const char **argv) {
     for (int i = 0; i < argc - 1; i++) {
         CoPlanner_add(&planner, STACK_SIZE, processFile);
         planner.data[i].userData.file = fopen(argv[i + 1], "rb+");
+        if (!planner.data[i].userData.file){
+            printf("No file %s\n", argv[i + 1]);
+            return (EXIT_FAILURE);
+        }
     }
     CoPlanner_fire(&planner);
 
