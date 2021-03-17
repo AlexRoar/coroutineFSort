@@ -19,6 +19,7 @@
 #define handleError(msg) \
    do { perror(msg); exit(EXIT_FAILURE); } while (0)
 
+
 typedef struct {
     FILE *file;
     int *array;
@@ -47,6 +48,8 @@ typedef struct {
 } CoPlanner;
 
 void CoPlanner_init(CoPlanner *this, unsigned noCon, struct timeval latency);
+
+void CoPlanner_destroy(CoPlanner *this);
 
 void CoPlanner_add(CoPlanner *this, size_t stackSize, void *func);
 

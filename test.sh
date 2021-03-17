@@ -11,4 +11,4 @@ if [ -z "$2" ]
 fi
 sh generateTest.sh $2
 sh sort.sh $1 $2
-sh checkTest.sh $2
+sh checkTest.sh

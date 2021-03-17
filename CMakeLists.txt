@@ -9,4 +9,6 @@ add_executable(coSort
         src/coSort.h
         src/coSort.c
         src/stack.c
-        src/stack.h)
+        src/stack.h
+        src/stackArrays.c
+        src/stackArrays.h)

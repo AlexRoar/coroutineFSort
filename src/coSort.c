@@ -7,6 +7,8 @@
 
 #include "coSort.h"
 #include "stack.h"
+#include "stackArrays.h"
+#include <string.h>
 
 #define STACK_SIZE (64 * 1024)
 #define MICDIV 1000000
@@ -14,12 +16,14 @@ static CoPlanner planner;
 
 void fileInputNumbers(ContextData *nowData, stack *input, int id);
 
+Array merge(Array a, Array b);
+
 void processFile(int id);
 
 void printResults();
 
 int main(int argc, const char **argv) {
-    if (argc <= 1){
+    if (argc <= 1) {
         printf("No latency in command line args\n");
         return (EXIT_FAILURE);
     }
@@ -34,8 +38,8 @@ int main(int argc, const char **argv) {
 
     for (int i = 0; i < argc - 1; i++) {
         CoPlanner_add(&planner, STACK_SIZE, processFile);
-        planner.data[i].userData.file = fopen(argv[i + 1], "rb+");
-        if (!planner.data[i].userData.file){
+        planner.data[i].userData.file = fopen(argv[i + 1], "rb");
+        if (!planner.data[i].userData.file) {
             printf("No file %s\n", argv[i + 1]);
             return (EXIT_FAILURE);
         }
@@ -43,7 +47,76 @@ int main(int argc, const char **argv) {
     CoPlanner_fire(&planner);
 
     printResults();
+
+    stackArray mergeStack;
+    StackArray_init(&mergeStack, planner.count + 1);
+
+    for(int i = 0; i < planner.count; i++) {
+        Array new = {planner.data[i].userData.array, planner.data[i].userData.count};
+        StackArray_push(&mergeStack, new);
+    }
+
+    while(StackArray_size(&mergeStack) > 1) {
+        Array a = StackArray_pop(&mergeStack);
+        Array b = StackArray_pop(&mergeStack);
+        StackArray_push(&mergeStack, merge(a, b));
+    }
+    Array res = {0,0};
+    if (StackArray_size(&mergeStack) == 1)
+        res = StackArray_pop(&mergeStack);
+
+    FILE* outFile = fopen("out.txt", "w");
+    if (!outFile){
+        printf("Can't open out.txt");
+        return (EXIT_FAILURE);
+    }
+    for(int i = 0; i < res.count; i++) {
+        fprintf(outFile, "%d ", ((int*)res.array)[i]);
+    }
+
+    fclose(outFile);
+    CoPlanner_destroy(&planner);
     return 0;
+}
+
+Array merge(Array a, Array b) {
+    int* new = malloc((a.count + b.count) * sizeof(int));
+    int* aC = a.array;
+    int* bC = b.array;
+
+    int j = 0, k = 0;
+    for (int i = 0; i < a.count + b.count;) {
+        if (j < a.count && k < b.count) {
+            if (aC[j] < bC[k]) {
+                new[i] = aC[j];
+                j++;
+            }
+            else {
+                new[i] = bC[k];
+                k++;
+            }
+            i++;
+        }
+        else if (j == a.count) {
+            for (; i < a.count + b.count;) {
+                new[i] = bC[k];
+                k++;
+                i++;
+            }
+        }
+        else {
+            for (; i < a.count + b.count;) {
+                new[i] = aC[j];
+                j++;
+                i++;
+            }
+        }
+    }
+
+    free(a.array);
+    free(b.array);
+    Array ret = {new, a.count + b.count};
+    return ret;
 }
 
 void fileInputNumbers(ContextData *nowData, stack *input, int id) {
@@ -56,12 +129,12 @@ void fileInputNumbers(ContextData *nowData, stack *input, int id) {
 
     char *fileRead = malloc(size + 1);
 
-    if (!fileRead){
+    if (!fileRead) {
         printf("Error on malloc in coroutine %d", id);
         CoPlanner_finishCoroutine(&planner);
         return;
     }
-    if (!nowData->userData.file){
+    if (!nowData->userData.file) {
         printf("Error on file pointer in coroutine %d", id);
         CoPlanner_finishCoroutine(&planner);
         free(fileRead);
@@ -98,6 +171,7 @@ void fileInputNumbers(ContextData *nowData, stack *input, int id) {
     nowData->userData.array = input->items;
     CoPlanner_rollIfLatency(&planner);
     free(fileRead);
+    fclose(nowData->userData.file);
     CoPlanner_rollIfLatency(&planner);
 }
 
@@ -121,17 +195,6 @@ void processFile(int id) {
             }
         }
     }
-
-    CoPlanner_rollIfLatency(&planner);
-    rewind(nowData->userData.file);
-    CoPlanner_rollIfLatency(&planner);
-
-    for (size_t i = 0; i < n; i++) {
-        fprintf(nowData->userData.file, "%d ", arr[i]);
-        CoPlanner_rollIfLatency(&planner);
-    }
-
-    free(input.items);
     CoPlanner_finishCoroutine(&planner);
 }
 
@@ -165,6 +228,14 @@ void CoPlanner_init(CoPlanner *this, unsigned noCon, struct timeval latency) {
     this->active = calloc(noCon, sizeof(char));
     if (!this->contexts || !this->data || !this->active)
         handleError("malloc");
+}
+
+void CoPlanner_destroy(CoPlanner *this) {
+    free(this->active);
+    free(this->data);
+    for (int i = 0; i < this->count; i++)
+        munmap(this->contexts[i].uc_stack.ss_sp, this->contexts[i].uc_stack.ss_size);
+    free(this->contexts);
 }
 
 void CoPlanner_add(CoPlanner *this, size_t stackSize, void *func) {
