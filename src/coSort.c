@@ -6,6 +6,7 @@
 #include "stack.h"
 
 #define STACK_SIZE (64 * 1024)
+#define MICDIV 1000000
 static CoPlanner planner;
 
 void fileInputNumbers(ContextData *nowData, stack *input, int id);
@@ -24,9 +25,9 @@ int main(int argc, const char **argv) {
     argv++;
     argc--;
 
-    struct timeval latency = {latencyInp / 1000000, latencyInp % 1000000};
+    struct timeval latency = {latencyInp / MICDIV, latencyInp % MICDIV};
     printf("Desired latency: %ld.%06ld\n", (long int) latency.tv_sec, (long int) latency.tv_usec);
-    CoPlanner_init(&planner, 10, latency);
+    CoPlanner_init(&planner, argc, latency);
 
     for (int i = 0; i < argc - 1; i++) {
         CoPlanner_add(&planner, STACK_SIZE, processFile);
@@ -133,11 +134,11 @@ void printResults() {
     printf("Total time: %ld.%06ld, %zu switches\n", (long int) tval_result.tv_sec, (long int) tval_result.tv_usec,
            planner.switches);
 
-    size_t latencyCalc = tval_result.tv_sec * 1000000 + tval_result.tv_usec;
+    size_t latencyCalc = tval_result.tv_sec * MICDIV + tval_result.tv_usec;
     if (planner.switches)
         latencyCalc /= planner.switches;
     latencyCalc *= planner.count;
-    printf("Real latency: %ld.%06ld\n", (long int) latencyCalc / 1000000, (long int) latencyCalc % 1000000);
+    printf("Real latency: %ld.%06ld\n", (long int) latencyCalc / MICDIV, (long int) latencyCalc % MICDIV);
 }
 
 
@@ -270,19 +271,19 @@ struct timeval CoPlanner_elapsed(CoPlanner *this) {
 
 void CoPlanner_setLatencyN(CoPlanner *this) {
     this->latencyByN = this->latency;
-    size_t microSum = (this->latency.tv_sec * 1000000) + this->latency.tv_usec;
+    size_t microSum = (this->latency.tv_sec * MICDIV) + this->latency.tv_usec;
     microSum /= this->count;
 
-    this->latencyByN.tv_sec = microSum / 1000000;
-    this->latencyByN.tv_usec = microSum % 1000000;
+    this->latencyByN.tv_sec = microSum / MICDIV;
+    this->latencyByN.tv_usec = microSum % MICDIV;
 }
 
 void CoPlanner_addCoElapsed(CoPlanner *this) {
     struct timeval elapsedNew = CoPlanner_elapsed(this);
-    size_t total = this->data[this->now].elapsed.tv_sec * 1000000 + this->data[this->now].elapsed.tv_usec;
-    total += elapsedNew.tv_sec * 1000000 + elapsedNew.tv_usec;
-    this->data[this->now].elapsed.tv_sec = total / 1000000;
-    this->data[this->now].elapsed.tv_usec = total % 1000000;
+    size_t total = this->data[this->now].elapsed.tv_sec * MICDIV + this->data[this->now].elapsed.tv_usec;
+    total += elapsedNew.tv_sec * MICDIV + elapsedNew.tv_usec;
+    this->data[this->now].elapsed.tv_sec = total / MICDIV;
+    this->data[this->now].elapsed.tv_usec = total % MICDIV;
 }
 
 struct timeval getNowFastTime() {
