@@ -1,6 +1,6 @@
 # Coroutine Files Sort
 
-Sort numbers in files on pure C with the power of couroutines.
+Sort numbers in files and merge them into one on pure C with the power of couroutines.
 
 Mail.ru Tarantool Highload & SysProg first task
 
