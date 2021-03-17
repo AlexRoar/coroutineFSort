@@ -1,0 +1,1 @@
+sh generateTest.sh && sh sort.sh && sh checkTest.sh

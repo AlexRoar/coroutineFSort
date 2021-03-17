@@ -21,5 +21,5 @@ coSort <latency> [file1, file2, ...]
 
 ## Testing
 ```bash
-sh generateTest.sh && sh sort.sh && sh checkTest.sh
+sh test.sh
 ```
