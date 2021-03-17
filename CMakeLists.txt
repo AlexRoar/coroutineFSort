@@ -5,7 +5,7 @@ set(CMAKE_C_STANDARD 11)
 
 include_directories(.)
 add_executable(CoSort
-        coSort.h
-        coSort.c
-        stack.c
-        stack.h)
+        src/coSort.h
+        src/coSort.c
+        src/stack.c
+        src/stack.h)

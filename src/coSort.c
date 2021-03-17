@@ -8,6 +8,36 @@
 #define STACK_SIZE (64 * 1024)
 static CoPlanner planner;
 
+void fileInputNumbers(ContextData *nowData, stack *input, int id);
+
+void processFile(int id);
+
+void printResults();
+
+int main(int argc, const char **argv) {
+    if (argc <= 1){
+        printf("No latency in command line args\n");
+        return (EXIT_FAILURE);
+    }
+    size_t latencyInp = 0;
+    sscanf(argv[1], "%zu", &latencyInp);
+    argv++;
+    argc--;
+
+    struct timeval latency = {latencyInp / 1000000, latencyInp % 1000000};
+    printf("Desired latency: %ld.%06ld\n", (long int) latency.tv_sec, (long int) latency.tv_usec);
+    CoPlanner_init(&planner, 10, latency);
+
+    for (int i = 0; i < argc - 1; i++) {
+        CoPlanner_add(&planner, STACK_SIZE, processFile);
+        planner.data[i].userData.file = fopen(argv[i + 1], "rb+");
+    }
+    CoPlanner_fire(&planner);
+
+    printResults();
+    return 0;
+}
+
 void fileInputNumbers(ContextData *nowData, stack *input, int id) {
     fseek(nowData->userData.file, 0L, SEEK_END);
     CoPlanner_rollIfLatency(&planner);
@@ -106,25 +136,6 @@ void printResults() {
     printf("Real latency: %ld.%06ld\n", (long int) latencyCalc / 1000000, (long int) latencyCalc % 1000000);
 }
 
-int main(int argc, const char **argv) {
-    size_t latencyInp = 0;
-    sscanf(argv[1], "%zu", &latencyInp);
-    argv++;
-    argc--;
-
-    struct timeval latency = {latencyInp / 1000000, latencyInp % 1000000};
-    printf("Desired latency: %ld.%06ld\n", (long int) latency.tv_sec, (long int) latency.tv_usec);
-    CoPlanner_init(&planner, 10, latency);
-
-    for (int i = 0; i < argc - 1; i++) {
-        CoPlanner_add(&planner, STACK_SIZE, processFile);
-        planner.data[i].userData.file = fopen(argv[i + 1], "rb+");
-    }
-    CoPlanner_fire(&planner);
-
-    printResults();
-    return 0;
-}
 
 void CoPlanner_init(CoPlanner *this, unsigned noCon, struct timeval latency) {
     this->capacity = noCon;
