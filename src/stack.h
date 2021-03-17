@@ -5,6 +5,7 @@
 #ifndef COROUTINES_STACK_H
 #define COROUTINES_STACK_H
 #include <stdlib.h>
+#include <stdio.h>
 
 typedef struct {
     size_t maxsize;    // define max capacity of the stack

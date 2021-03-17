@@ -1,12 +1,16 @@
-//
-// Created by Александр Дремов on 17.03.2021.
-//
+// This is a personal academic project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++, C#, and Java: http://www.viva64.com
 
 #include "stack.h"
 
+#define handleError(msg) \
+   do { perror(msg); exit(EXIT_FAILURE); } while (0)
 
 stack* newStack(int capacity) {
     stack *pt = (stack*)malloc(sizeof(stack));
+    if (!pt){
+        handleError("malloc");
+    }
     Stack_init(pt, capacity);
     return pt;
 }
@@ -15,6 +19,9 @@ void Stack_init(stack *pt, int capacity){
     pt->maxsize = capacity;
     pt->top = -1;
     pt->items = (int*)malloc(sizeof(int) * capacity);
+    if (!pt->items){
+        handleError("malloc");
+    }
 }
 
 size_t Stack_size(stack *pt) {
@@ -30,7 +37,11 @@ int Stack_isFull(stack *pt) {
 }
 
 void Stack_expand(stack *pt){
-    pt->items = (int*)realloc(pt->items, sizeof(int) * pt->maxsize * 2);
+    int* new = (int*)realloc(pt->items, sizeof(int) * pt->maxsize * 2);
+    if (!new){
+        handleError("malloc");
+    }
+    pt->items = new;
     pt->maxsize *= 2;
 }
 

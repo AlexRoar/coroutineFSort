@@ -1,3 +1,6 @@
+// This is a personal academic project. Dear PVS-Studio, please check it.
+// PVS-Studio Static Code Analyzer for C, C++, C#, and Java: http://www.viva64.com
+
 #pragma clang diagnostic push
 #pragma clang diagnostic ignored "-Wdeprecated-declarations"
 #define _XOPEN_SOURCE /* Mac compatibility. */
@@ -52,9 +55,17 @@ void fileInputNumbers(ContextData *nowData, stack *input, int id) {
     CoPlanner_rollIfLatency(&planner);
 
     char *fileRead = malloc(size + 1);
+
     if (!fileRead){
         printf("Error on malloc in coroutine %d", id);
         CoPlanner_finishCoroutine(&planner);
+        return;
+    }
+    if (!nowData->userData.file){
+        printf("Error on file pointer in coroutine %d", id);
+        CoPlanner_finishCoroutine(&planner);
+        free(fileRead);
+        return;
     }
 
     CoPlanner_rollIfLatency(&planner);
