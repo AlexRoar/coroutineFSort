@@ -236,7 +236,7 @@ void CoPlanner_destroy(CoPlanner *this) {
     free(this->active);
     free(this->data);
     for (int i = 0; i < this->count; i++)
-        munmap(this->contexts[i].uc_stack.ss_sp, this->contexts[i].uc_stack.ss_size);
+        free(this->contexts[i].uc_stack.ss_sp);
     free(this->contexts);
 }
 
@@ -377,8 +377,9 @@ struct timeval getNowFastTime() {
 }
 
 static void *allocateStack(size_t size) {
-    return mmap(NULL, size, PROT_READ | PROT_WRITE | PROT_EXEC,
-                MAP_ANON | MAP_PRIVATE, -1, 0);
+    void *stack = malloc(size);
+    mprotect(stack, size, PROT_READ | PROT_WRITE | PROT_EXEC);
+    return stack;
 }
 
 #pragma clang diagnostic pop
