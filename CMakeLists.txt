@@ -4,7 +4,7 @@ project(CoRoutines C)
 set(CMAKE_C_STANDARD 11)
 
 include_directories(.)
-add_executable(CoSort
+add_executable(coSort
         src/coSort.h
         src/coSort.c
         src/stack.c
