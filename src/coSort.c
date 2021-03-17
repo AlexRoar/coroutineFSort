@@ -70,10 +70,12 @@ int main(int argc, const char **argv) {
         printf("Can't open out.txt");
         return (EXIT_FAILURE);
     }
-    for(int i = 0; i < res.count; i++) {
+    for(int i = 0; i < res.count; i++)
         fprintf(outFile, "%d ", ((int*)res.array)[i]);
-    }
 
+
+    if (res.array)
+        free(res.array);
     fclose(outFile);
     CoPlanner_destroy(&planner);
     return 0;
