@@ -52,28 +52,29 @@ int main(int argc, const char **argv) {
     stackArray mergeStack;
     StackArray_init(&mergeStack, planner.count + 1);
 
-    for(int i = 0; i < planner.count; i++) {
+    for (int i = 0; i < planner.count; i++) {
         Array new = {planner.data[i].userData.array, planner.data[i].userData.count};
         StackArray_push(&mergeStack, new);
     }
 
-    while(StackArray_size(&mergeStack) > 1) {
+    while (StackArray_size(&mergeStack) > 1) {
         Array a = StackArray_pop(&mergeStack);
         Array b = StackArray_pop(&mergeStack);
         StackArray_push(&mergeStack, merge(a, b));
+        free(a.array);
+        free(b.array);
     }
-    Array res = {0,0};
+    Array res = {0, 0};
     if (StackArray_size(&mergeStack) == 1)
         res = StackArray_pop(&mergeStack);
 
-    FILE* outFile = fopen("out.txt", "w");
-    if (!outFile){
+    FILE *outFile = fopen("out.txt", "w");
+    if (!outFile) {
         printf("Can't open out.txt");
         return (EXIT_FAILURE);
     }
-    for(int i = 0; i < res.count; i++)
-        fprintf(outFile, "%d ", ((int*)res.array)[i]);
-
+    for (int i = 0; i < res.count; i++)
+        fprintf(outFile, "%d ", ((int *) res.array)[i]);
 
     if (res.array)
         free(res.array);
@@ -84,9 +85,9 @@ int main(int argc, const char **argv) {
 }
 
 Array merge(Array a, Array b) {
-    int* new = malloc((a.count + b.count) * sizeof(int));
-    int* aC = a.array;
-    int* bC = b.array;
+    int *new = malloc((a.count + b.count) * sizeof(int));
+    int *aC = a.array;
+    int *bC = b.array;
 
     int j = 0, k = 0;
     for (int i = 0; i < a.count + b.count;) {
@@ -94,21 +95,18 @@ Array merge(Array a, Array b) {
             if (aC[j] < bC[k]) {
                 new[i] = aC[j];
                 j++;
-            }
-            else {
+            } else {
                 new[i] = bC[k];
                 k++;
             }
             i++;
-        }
-        else if (j == a.count) {
+        } else if (j == a.count) {
             for (; i < a.count + b.count;) {
                 new[i] = bC[k];
                 k++;
                 i++;
             }
-        }
-        else {
+        } else {
             for (; i < a.count + b.count;) {
                 new[i] = aC[j];
                 j++;
@@ -117,8 +115,6 @@ Array merge(Array a, Array b) {
         }
     }
 
-    free(a.array);
-    free(b.array);
     Array ret = {new, a.count + b.count};
     return ret;
 }
@@ -179,6 +175,67 @@ void fileInputNumbers(ContextData *nowData, stack *input, int id) {
     CoPlanner_rollIfLatency(&planner);
 }
 
+void mergeSortMerge(int arr[], size_t l, size_t m, size_t r) {
+    size_t i, j, k;
+    size_t n1 = m - l + 1;
+    size_t n2 = r - m;
+
+    int L[n1], R[n2];
+
+    for (i = 0; i < n1; i++) {
+        L[i] = arr[l + i];
+        CoPlanner_rollIfLatency(&planner);
+    }
+    for (j = 0; j < n2; j++) {
+        R[j] = arr[m + 1 + j];
+        CoPlanner_rollIfLatency(&planner);
+    }
+
+    i = 0;
+    j = 0;
+    k = l;
+    while (i < n1 && j < n2) {
+        CoPlanner_rollIfLatency(&planner);
+        if (L[i] <= R[j]) {
+            arr[k] = L[i];
+            i++;
+        } else {
+            arr[k] = R[j];
+            j++;
+        }
+        k++;
+    }
+
+    while (i < n1) {
+        CoPlanner_rollIfLatency(&planner);
+        arr[k] = L[i];
+        i++;
+        k++;
+    }
+
+    while (j < n2) {
+        CoPlanner_rollIfLatency(&planner);
+        arr[k] = R[j];
+        j++;
+        k++;
+    }
+}
+
+void mergeSort(int *arr, size_t l, size_t r) {
+    if (l < r) {
+        CoPlanner_rollIfLatency(&planner);
+        size_t m = l + (r - l) / 2;
+
+        mergeSort(arr, l, m);
+        CoPlanner_rollIfLatency(&planner);
+        mergeSort(arr, m + 1, r);
+        CoPlanner_rollIfLatency(&planner);
+        mergeSortMerge(arr, l, m, r);
+        CoPlanner_rollIfLatency(&planner);
+    }
+}
+
+
 void processFile(int id) {
     stack input = {};
     ContextData *nowData = CoPlanner_dataNow(&planner);
@@ -188,17 +245,9 @@ void processFile(int id) {
 
     size_t n = nowData->userData.count;
     int *arr = nowData->userData.array;
-    for (size_t i = 0; i < n - 1; i++) {
-        CoPlanner_rollIfLatency(&planner);
-        for (size_t j = 0; j < n - i - 1; j++) {
-            CoPlanner_rollIfLatency(&planner);
-            if (arr[j] > arr[j + 1]) {
-                int tmp = arr[j];
-                arr[j] = arr[j + 1];
-                arr[j + 1] = tmp;
-            }
-        }
-    }
+
+    mergeSort(arr, 0, n - 1);
+
     CoPlanner_finishCoroutine(&planner);
 }
 
@@ -309,7 +358,8 @@ void CoPlanner_swapToNowFrom(CoPlanner *this, ucontext_t *enterC) {
 
 bool CoPlanner_rollIfLatency(CoPlanner *this) {
     struct timeval elapsed = CoPlanner_elapsed(this);
-    if (elapsed.tv_sec > this->latencyByN.tv_sec || (elapsed.tv_sec == this->latencyByN.tv_sec && elapsed.tv_usec >= this->latencyByN.tv_usec))
+    if (elapsed.tv_sec > this->latencyByN.tv_sec ||
+        (elapsed.tv_sec == this->latencyByN.tv_sec && elapsed.tv_usec >= this->latencyByN.tv_usec))
         return CoPlanner_roll(this);
     return false;
 }
