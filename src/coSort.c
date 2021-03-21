@@ -222,8 +222,8 @@ void mergeSortMerge(int arr[], size_t l, size_t m, size_t r) {
 }
 
 void mergeSort(int *arr, size_t l, size_t r) {
+    CoPlanner_rollIfLatency(&planner);
     if (l < r) {
-        CoPlanner_rollIfLatency(&planner);
         size_t m = l + (r - l) / 2;
 
         mergeSort(arr, l, m);
@@ -245,9 +245,7 @@ void processFile(int id) {
 
     size_t n = nowData->userData.count;
     int *arr = nowData->userData.array;
-
-    mergeSort(arr, 0, n - 1);
-
+    mergeSort(arr, 0, n);
     CoPlanner_finishCoroutine(&planner);
 }
 
