@@ -333,6 +333,10 @@ void CoPlanner_fire(CoPlanner *this) {
     }
     this->finish = getNowFastTime();
     this->now = -1;
+
+    for (int i = 0; i < this->count; i++) {
+        free(this->data[i].initialSp);
+    }
 }
 
 bool CoPlanner_roll(CoPlanner *this) {
